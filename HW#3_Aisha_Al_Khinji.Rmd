@@ -6,6 +6,7 @@ output: html_document
 
 The aim of this assignment is to reproduce the results presented in Figure 2 of the following paper: Qian, F., Bolen, C. R., Jing, C., Wang, X., Zheng, W., Zhao, H., et al. (2013). Impaired toll-like receptor 3-mediated immune responses from macrophages of patients chronically infected with hepatitis C virus. Clinical and Vaccine Immunology : CVI, 20(2), 146–155. doi:10.1128/CVI.00530-12
 
+##Load the libraries and install the required packages:
 ```{r}
 library(GEOmetadb)
 library(GEOquery)
@@ -14,6 +15,7 @@ library(data.table)
 library(limma)
 ```
 
+##Load the libraries and install the required packages:
 ```{r}
 gds <- getGEO("GSE40812", GSEMatrix =TRUE)
 if (length(gds) > 1) idx <- grep("GPL10558", attr(gds, "names")) else idx <- 1
@@ -21,7 +23,7 @@ gset <- gds[[idx]]
 ```
 
 
-saniize 
+## sanitize 
 
 
 
@@ -41,7 +43,7 @@ mm_pd$treatment <- gsub(".*: ", "", mm_pd$characteristics_ch1.2)
 pData(mm_eset) <- mm_pd
 ```
 
-
+##Normalization dataset (optional):
 
 ```{r}
 library(lumi)
