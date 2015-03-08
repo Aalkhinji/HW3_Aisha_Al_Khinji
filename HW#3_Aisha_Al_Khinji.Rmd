@@ -1,0 +1,91 @@
+---
+title: "HW3_Aisha"
+output: html_document
+---
+#Homework 2
+
+The aim of this assignment is to reproduce the results presented in Figure 2 of the following paper: Qian, F., Bolen, C. R., Jing, C., Wang, X., Zheng, W., Zhao, H., et al. (2013). Impaired toll-like receptor 3-mediated immune responses from macrophages of patients chronically infected with hepatitis C virus. Clinical and Vaccine Immunology : CVI, 20(2), 146–155. doi:10.1128/CVI.00530-12
+
+```{r}
+library(GEOmetadb)
+library(GEOquery)
+library(Biobase)
+library(data.table)
+library(limma)
+```
+
+```{r}
+gds <- getGEO("GSE40812", GSEMatrix =TRUE)
+if (length(gds) > 1) idx <- grep("GPL10558", attr(gds, "names")) else idx <- 1
+gset <- gds[[idx]]
+```
+
+
+saniize 
+
+
+
+```{r}
+pd <- pData(gds[[1]])
+
+mm_pd <- pd[pd$source_name_ch1=="Monocyte-derived Macrophage",]
+
+mm_eset <- gds[[1]]
+
+#characteristic_ch1 indicates VL++ or VL--
+#characteristic_ch1.2 indicates Mock or Poly IC
+mm_pd$HCV <- gsub(".*: ", "", mm_pd$characteristics_ch1)
+mm_pd$HCV <- ifelse(mm_pd$HCV=="Neg", "-", "+")
+mm_pd$treatment <- gsub(".*: ", "", mm_pd$characteristics_ch1.2)
+##Subset pData to new set
+pData(mm_eset) <- mm_pd
+```
+
+
+
+```{r}
+library(lumi)
+
+mm_eset <- lumiN(mm_eset)
+
+```
+
+
+
+##Using limma to preform the following task:
+### 1. Describe the model matrix
+### 2. Find the probes that differential expressed 
+### 3. Fit each probeset to model
+### 4. Empirical Bayes adjustment
+### 5. Draw table of differential expressed probset
+```{r}
+library(limma)
+# test for differential expression using limma
+treat_matrix <- model.matrix(~treatment, mm_eset)
+colnames(treat_matrix)
+colnames(treat_matrix) <- c("Mock", "Poly")
+fit1 <- lmFit(mm_eset, treat_matrix)
+ebay1 <- eBayes(fit1)
+
+# Top table of results, adjusted for false discovery rate (5%)
+TopTable1 <- topTable(ebay1, coef="Poly", p.value=0.05, lfc=log2(1.5),number=Inf)
+
+selected <- TopTable1$ID
+length(selected)
+eset_small <- mm_eset[selected,]
+HCV_matrix <- model.matrix(~HCV, eset_small)
+colnames(HCV_matrix)
+colnames(HCV_matrix) <- c("Neg", "Pos")
+fit7 <- lmFit(eset_small, HCV_matrix)
+fit7_ebay <- eBayes(fit7)
+TopTable7 <- topTable(fit7_ebay, coef="Pos", adjust="none", number=Inf, p.value=0.1)
+selected <- TopTable7$ID
+length(selected)
+```
+
+
+```{r}
+library(pheatmap)
+mat <- exprs(eset_small[as.character(selected),])
+heatmap(mat, Rowv=FALSE, Colv=FALSE, keysize=1.5,trace="none", scale="row", margins=c(5,10))
+```
